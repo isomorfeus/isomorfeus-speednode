@@ -23,7 +23,10 @@ Best used in spec/test environments.
 ```ruby
 ExecJS.runtime = ExecJS::Runtimes::PermissiveSpeednode
 ```
-
+If node cant find node modules, uts possible to set the load path before assigning the runtime:
+```ruby
+ENV['NODE_PATH'] = './node_modules'
+```
 ### Benchmarks
 
 Highly scientific, maybe.
