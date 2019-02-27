@@ -42,3 +42,7 @@ Node.js (V8) fast                              0.191454   0.081396   0.272850 ( 
 mini_racer (V8)                                0.017091   0.002494   0.019585 (  0.019584)
 ```
 
+To run benchmark:
+- clone repo
+- `bundle install`
+- `ruby bench.rb`
