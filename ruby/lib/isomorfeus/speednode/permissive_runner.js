@@ -202,7 +202,7 @@ var server = net.createServer(function(s) {
       }
     }
     s.write(outputJSON + '\n');
-    if (process_exit) { process.exit(process_exit); }
+    if (process_exit !== false) { process.exit(process_exit); }
   });
 });
 
