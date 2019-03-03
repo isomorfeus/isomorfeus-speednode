@@ -1,7 +1,10 @@
 require 'securerandom'
 require 'socket'
-require 'execjs'
 require 'oj'
+require 'execjs/module'
 require 'isomorfeus/speednode/node_command'
+require 'execjs/runtime'
 require 'isomorfeus/speednode/runtime'
+require "execjs/runtimes"
 require 'isomorfeus/speednode'
+require 'execjs'
