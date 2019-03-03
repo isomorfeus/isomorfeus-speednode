@@ -21,9 +21,13 @@ function massageStackTrace(stack) {
     return stack;
   }
 }
-
+function createCompatibleContext() {
+  var c = vm.createContext();
+  vm.runInContext('delete this.console', c, "(execjs)");
+  return c;
+}
 function getContext(uuid) {
-  return contexts[uuid] || (contexts[uuid] = vm.createContext())
+  return contexts[uuid] || (contexts[uuid] = createCompatibleContext());
 }
 
 var commands = {
