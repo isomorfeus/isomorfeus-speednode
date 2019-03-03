@@ -11,7 +11,6 @@ Gem::Specification.new do |s|
   s.description  = 'ExecJS runtime, tuned for Isomorfeus.'
 
   s.files          = `git ls-files -- {lib,LICENSE,README.md}`.split("\n")
-  s.test_files     = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.require_paths  = ['lib']
 
   s.add_dependency 'execjs', '~> 2.7.0'
