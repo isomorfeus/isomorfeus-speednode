@@ -16,4 +16,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency 'execjs', '~> 2.7.0'
   s.add_dependency 'oj', '~> 3.6.0'
+  s.add_development_dependency "bundler"
+  s.add_development_dependency "rake"
+  s.add_development_dependency "minitest", "~> 5.0"
 end
