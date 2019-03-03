@@ -10,7 +10,7 @@ module Isomorfeus
 
         def execute
           result = ''
-          message = ::Oj.dump({ 'cmd' => @cmd, 'args' => @arguments })
+          message = ::Oj.dump({ 'cmd' => @cmd, 'args' => @arguments }, mode: :strict)
           @socket.sendmsg(message + "\n")
           begin
             result << @socket.recvmsg()[0]
@@ -62,7 +62,7 @@ module Isomorfeus
           @pid = Process.spawn({"SOCKET_PATH" => @socket_path}, @options[:binary], @options[:runner_path])
 
           retries = 20
-          while !File.exists?(@socket_path)
+          while !File.exist?(@socket_path)
             sleep 0.05
             retries -= 1
 
@@ -85,7 +85,7 @@ module Isomorfeus
         end
       end
 
-      class Context < Runtime::Context
+      class Context < ::ExecJS::Runtime::Context
         def initialize(runtime, source = "", options = {})
           @runtime = runtime
           @uuid = SecureRandom.uuid
@@ -102,7 +102,9 @@ module Isomorfeus
         end
 
         def eval(source, options = {})
-          raw_exec("(#{source})")
+          if /\S/ =~ source
+            raw_exec("(#{source})")
+          end
         end
 
         def exec(source, options = {})
