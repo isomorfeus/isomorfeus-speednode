@@ -142,7 +142,7 @@ function massageStackTrace(stack) {
 }
 
 function getContext(uuid) {
-  return contexts[uuid] || (contexts[uuid] = vm.createContext({ require }));
+  return contexts[uuid] || (contexts[uuid] = vm.createContext({ require, setTimeout }));
 }
 
 var commands = {
