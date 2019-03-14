@@ -43,6 +43,10 @@ module Isomorfeus
           command("exec", {'context' => context, 'source' => source})
         end
 
+        def execp(context, source)
+          command("execp", {'context' => context, 'source' => source})
+        end
+
         def delete_context(context)
           command("deleteContext", context)
         end
@@ -89,16 +93,21 @@ module Isomorfeus
         def initialize(runtime, source = "", options = {})
           @runtime = runtime
           @uuid = SecureRandom.uuid
+          @permissive = !!options[:permissive]
 
           ObjectSpace.define_finalizer(self, self.class.finalize(@runtime, @uuid))
 
           source = encode(source)
 
-          raw_exec(source)
+          @permissive ? raw_execp(source) : raw_exec(source)
         end
 
         def self.finalize(runtime, uuid)
           proc { runtime.vm.delete_context(uuid) }
+        end
+
+        def call(identifier, *args)
+          eval "#{identifier}.apply(this, #{::Oj.dump(args)})"
         end
 
         def eval(source, options = {})
@@ -111,15 +120,32 @@ module Isomorfeus
           raw_exec("(function(){#{source}})()")
         end
 
-        def raw_exec(source, options = {})
+        def permissive?
+          @permissive
+        end
+
+        def permissive_eval(source, options = {})
+          if /\S/ =~ source
+            raw_execp("(#{source})")
+          end
+        end
+
+        def permissive_exec(source, options = {})
+          raw_execp("(function(){#{source}})()")
+        end
+
+        def raw_exec(source)
           source = encode(source)
 
           result = @runtime.vm.exec(@uuid, source)
           extract_result(result)
         end
 
-        def call(identifier, *args)
-          eval "#{identifier}.apply(this, #{::Oj.dump(args)})"
+        def raw_execp(source)
+          source = encode(source)
+
+          result = @runtime.vm.execp(@uuid, source)
+          extract_result(result)
         end
 
         protected

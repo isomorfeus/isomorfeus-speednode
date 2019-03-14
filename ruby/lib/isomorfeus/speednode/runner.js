@@ -134,72 +134,85 @@ CircularJSON.stringify = function stringify(value, replacer, space, doNotResolve
  * these versions.
  */
 function massageStackTrace(stack) {
-  if (stack && stack.indexOf("SyntaxError") == 0) {
-    return "(execjs):1\n" + stack;
-  } else {
-    return stack;
-  }
+    if (stack && stack.indexOf("SyntaxError") == 0) {
+        return "(execjs):1\n" + stack;
+    } else {
+        return stack;
+    }
 }
 
-function getContext(uuid) {
-  return contexts[uuid] || (contexts[uuid] = vm.createContext({ require, setTimeout }));
+function createCompatibleContext() {
+    var c = vm.createContext();
+    vm.runInContext('delete this.console', c, "(execjs)");
+    return c;
+}
+
+function createPermissiveContext() {
+    return vm.createContext({ require, setTimeout });
+}
+
+function getCompatibleContext(uuid) {
+    return contexts[uuid] || (contexts[uuid] = createCompatibleContext());
+}
+function getPermissiveContext(uuid) {
+    return contexts[uuid] || (contexts[uuid] = createPermissiveContext());
 }
 
 var commands = {
-  deleteContext: function(uuid) {
-    delete contexts[uuid];
-    return [1];
-  },
-  exit: function(code) {
-    process_exit = code;
-    return ['ok'];
-  },
-  exec: function execJS(input) {
-    var context = getContext(input.context);
-    var source = input.source;
-    try {
-      var program = function(){
-        return vm.runInContext(source, context, "(execjs)");
-      };
-      var result = program();
-      if (typeof result == 'undefined' && result !== null) {
+    deleteContext: function(uuid) {
+        delete contexts[uuid];
+        return [1];
+    },
+    exit: function(code) {
+        process_exit = code;
         return ['ok'];
-      } else {
+    },
+    execp: function execJS(input) {
+        var context = getPermissiveContext(input.context);
         try {
-          return ['ok', result];
-        } catch (err) {
-          return ['err', '' + err, err.stack];
-        }
-      }
-    } catch (err) {
-      return ['err', '' + err, massageStackTrace(err.stack)];
+            var program = function(){ return vm.runInContext(input.source, context, "(execjs)"); };
+            var result = program();
+            if (typeof result == 'undefined' && result !== null) { return ['ok']; }
+            else {
+                try { return ['ok', result]; }
+                catch (err) { return ['err', '' + err, err.stack]; }
+            }
+        } catch (err) { return ['err', '' + err, massageStackTrace(err.stack)]; }
+    },
+    exec: function execJS(input) {
+        var context = getCompatibleContext(input.context);
+        try {
+            var program = function(){ return vm.runInContext(input.source, context, "(execjs)"); };
+            var result = program();
+            if (typeof result == 'undefined' && result !== null) { return ['ok']; }
+            else {
+                try { return ['ok', result]; }
+                catch (err) { return ['err', '' + err, err.stack]; }
+            }
+        } catch (err) { return ['err', '' + err, massageStackTrace(err.stack)]; }
     }
-  }
 };
 
 var server = net.createServer(function(s) {
-  var received_data = '';
+    var received_data = '';
 
-  s.on('data', function (data) {
-    received_data += data;
+    s.on('data', function (data) {
+        received_data += data;
 
-    if (received_data[received_data.length - 1] !== "\n") { return; }
+        if (received_data[received_data.length - 1] !== "\n") { return; }
 
-    var request = received_data;
-    received_data = '';
+        var request = received_data;
+        received_data = '';
 
-    var input = JSON.parse(request);
-    var result = commands[input.cmd].apply(null, input.args);
-    var outputJSON = '';
+        var input = JSON.parse(request);
+        var result = commands[input.cmd].apply(null, input.args);
+        var outputJSON = '';
 
-    try {
-      outputJSON = JSON.stringify(result);
-    } catch(err) {
-      if (err.message.includes('circular')) {
-        outputJSON = CircularJSON.stringify(result);
-      } else {
-        outputJSON = JSON.stringify(['err', '' + err, err.stack]);
-      }
+        try { outputJSON = JSON.stringify(result); }
+        catch(err) {
+            if (err.message.includes('circular')) {
+            outputJSON = CircularJSON.stringify(result);
+        } else { outputJSON = JSON.stringify(['err', '' + err, err.stack]); }
     }
     s.write(outputJSON + '\n');
     if (process_exit !== false) { process.exit(process_exit); }
