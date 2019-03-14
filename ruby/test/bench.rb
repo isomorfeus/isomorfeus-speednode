@@ -6,10 +6,10 @@ require 'benchmark'
 
 TIMES = 1000
 CALL_TIMES = 1000
-SOURCE = File.read(File.expand_path("../bench/coffee-script.js", __FILE__)).freeze
-EXCLUDED_RUNTIMES = [ExecJS::Runtimes::Node, ExecJS::Runtimes::JavaScriptCore, ExecJS::Runtimes::V8, ExecJS::Runtimes::PermissiveSpeednode]
+SOURCE = File.read(File.expand_path("./fixtures/coffee-script.js", File.dirname(__FILE__))).freeze
+EXCLUDED_RUNTIMES = [ExecJS::Runtimes::Node, ExecJS::Runtimes::JavaScriptCore, ExecJS::Runtimes::V8]
 
-puts "standard ExecJS CoffeeScript call benchmark:"
+puts "Standard ExecJS CoffeeScript call benchmark:"
 Benchmark.bmbm do |x|
   ExecJS::Runtimes.runtimes.reject {|r| EXCLUDED_RUNTIMES.include?(r)}.each do |runtime|
     next if !runtime.available? || runtime.deprecated?
@@ -41,7 +41,7 @@ Benchmark.bmbm do |x|
   end
 end
 
-puts "\neval overhead benchmark:"
+puts "\nEval overhead benchmark:"
 Benchmark.bmbm do |x|
   ExecJS::Runtimes.runtimes.reject {|r| EXCLUDED_RUNTIMES.include?(r)}.each do |runtime|
     next if !runtime.available? || runtime.deprecated?
@@ -57,7 +57,7 @@ Benchmark.bmbm do |x|
   end
 end
 
-puts "\ncall overhead benchmark:"
+puts "\nCall overhead benchmark:"
 Benchmark.bmbm do |x|
   ExecJS::Runtimes.runtimes.reject {|r| EXCLUDED_RUNTIMES.include?(r)}.each do |runtime|
     next if !runtime.available? || runtime.deprecated?
@@ -69,6 +69,54 @@ Benchmark.bmbm do |x|
       CALL_TIMES.times do
         context.call("(function(arg) {return arg;})","true")
       end
+    end
+  end
+end
+
+puts "\nPermissive: standard ExecJS CoffeeScript call benchmark:"
+Benchmark.bmbm do |x|
+  x.report(ExecJS::Runtimes::Speednode.name) do
+    ExecJS.runtime = ExecJS::Runtimes::Speednode
+    context = ExecJS.permissive_compile(SOURCE)
+
+    TIMES.times do
+      context.call("CoffeeScript.eval", "((x) -> x * x)(8)")
+    end
+  end
+end
+
+puts "\nPermissive: CoffeeScript eval benchmark:"
+Benchmark.bmbm do |x|
+  x.report(ExecJS::Runtimes::Speednode.name) do
+    ExecJS.runtime = ExecJS::Runtimes::Speednode
+    context = ExecJS.permissive_compile(SOURCE)
+
+    TIMES.times do
+      context.eval("CoffeeScript.eval('((x) -> x * x)(8)')")
+    end
+  end
+end
+
+puts "\nPermissive: eval overhead benchmark:"
+Benchmark.bmbm do |x|
+  x.report(ExecJS::Runtimes::Speednode.name) do
+    ExecJS.runtime = ExecJS::Runtimes::Speednode
+    context = ExecJS.permissive_compile('')
+
+    CALL_TIMES.times do
+      context.eval("true")
+    end
+  end
+end
+
+puts "\nPermissive: call overhead benchmark:"
+Benchmark.bmbm do |x|
+  x.report(ExecJS::Runtimes::Speednode.name) do
+    ExecJS.runtime = ExecJS::Runtimes::Speednode
+    context = ExecJS.permissive_compile('')
+
+    CALL_TIMES.times do
+      context.call("(function(arg) {return arg;})","true")
     end
   end
 end

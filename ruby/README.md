@@ -13,20 +13,43 @@ In Gemfile:
 
 ### Configuration
 
-Isomorfeus-speednode provides 2 runtimes:
-- `CompatibleSpeednode` - is compatible with the minimalistic execjs approach. Mainly intended for production/development usage.
-- `PermissiveSpeednode` - allows for the usage of javascript commonjs 'require' and can handle circular objects from javascript world, to some extend.
-Best used in spec/test environments.
-
-`CompatibleSpeednode` is the default. The permissive runtime can be chosen by:
+Isomorfeus-speednode provides one node based runtime `Speednode` which runs scripts in node vms.
+The runtime can be chosen by:
 
 ```ruby
-ExecJS.runtime = ExecJS::Runtimes::PermissiveSpeednode
+ExecJS.runtime = ExecJS::Runtimes::Speednode
 ```
-If node cant find node modules, uts possible to set the load path before assigning the runtime:
+If node cant find node modules for the permissive contexts (see below), its possible to set the load path before assigning the runtime:
 ```ruby
 ENV['NODE_PATH'] = './node_modules'
 ```
+### Contexts
+
+Each ExecJS context runs in a node vm. Speednode offers two kinds of contexts:
+- a compatible context, which is compatible with default ExecJS behavior.
+- a permissive context, which is more permissive and allows to `require` node modules.
+
+#### Compatible
+A compatible context can be created with the standard `ExecJS.compile` or code can be executed within a compatible context by using the standard 
+`ExecJS.eval` or `ExecJS.exec`.
+Example for a compatible context:
+```ruby
+compat_context = ExecJS.compile('Test = "test"')
+compat_context.eval('1+1')
+```
+#### Permissive 
+A permissive context can be created with `ExecJS.permissive_compile` or code can be executed within a permissive context by using  
+`ExecJS.permissive_eval` or `ExecJS.permissive_exec`.
+Example for a permissive context:
+```ruby
+perm_context = ExecJS.permissive_compile('Test = "test"')
+perm_context.eval('1+1')
+```
+Evaluation in a permissive context:
+```ruby
+ExecJS.permissive_eval('1+1')
+```
+
 ### Benchmarks
 
 Highly scientific, maybe.
@@ -45,7 +68,13 @@ Node.js (V8) fast                              0.191454   0.081396   0.272850 ( 
 mini_racer (V8)                                0.017091   0.002494   0.019585 (  0.019584)
 ```
 
-To run benchmark:
+To run benchmarks:
 - clone repo
 - `bundle install`
-- `ruby bench.rb`
+- `bundle exec rake bench`
+
+### Tests
+To run tests:
+- clone repo
+- `bundle install`
+- `bundle exec rake test`

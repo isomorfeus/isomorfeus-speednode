@@ -6,13 +6,13 @@ task :bench do
 end
 
 task :test do
-  ENV["EXECJS_RUNTIME"] = 'CompatibleSpeednode'
+  ENV["EXECJS_RUNTIME"] = 'Speednode'
 end
 
 Rake::TestTask.new(:test) do |t|
   t.libs << "test"
   t.libs << "lib"
-  t.test_files = FileList['test/shim.rb', 'test/**/*_test.rb', 'test/test_execjs.rb']
+  t.test_files = FileList['test/shim.rb', 'test/**/*_test.rb', 'test/test_execjs.rb', 'test/test_permissive_execjs.rb']
 end
 
 task :default => :test
