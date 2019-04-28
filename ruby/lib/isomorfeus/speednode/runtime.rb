@@ -11,11 +11,11 @@ module Isomorfeus
         def execute
           result = ''
           message = ::Oj.dump({ 'cmd' => @cmd, 'args' => @arguments }, mode: :strict)
-          @socket.sendmsg(message + "\n")
+          @socket.sendmsg(message + "\x04")
           begin
             result << @socket.recvmsg()[0]
-          end until result[-1] == "\n"
-          ::Oj.load(result, create_additions: false)
+          end until result.end_with?("\x04")
+          ::Oj.load(result.chop!, create_additions: false)
         end
       end
 

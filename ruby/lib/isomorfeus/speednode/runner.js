@@ -199,9 +199,8 @@ var server = net.createServer(function(s) {
     s.on('data', function (data) {
         received_data += data;
 
-        if (received_data[received_data.length - 1] !== "\n") { return; }
-
-        var request = received_data;
+        if (!received_data.endsWith("\x04")) { return; }
+        var request = received_data.substring(0, received_data.length - 1);
         received_data = '';
 
         var input = JSON.parse(request);
@@ -214,7 +213,7 @@ var server = net.createServer(function(s) {
             outputJSON = CircularJSON.stringify(result);
         } else { outputJSON = JSON.stringify(['err', '' + err, err.stack]); }
     }
-    s.write(outputJSON + '\n');
+    s.write(outputJSON + '\x04');
     if (process_exit !== false) { process.exit(process_exit); }
   });
 });
