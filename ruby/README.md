@@ -3,8 +3,11 @@
 A fast runtime for execjs using node js.
 Inspired by [execjs-fastnode](https://github.com/jhawthorn/execjs-fastnode).
 
-### Chat
-At our [Gitter Isomorfeus Lobby](http://gitter.im/isomorfeus/Lobby) 
+### Community and Support
+At the [Isomorfeus Framework Project](http://isomorfeus.com) 
+
+### Tested
+[TravisCI](https://travis-ci.org): [![Build Status](https://travis-ci.org/isomorfeus/isomorfeus-speednode.svg?branch=master)](https://travis-ci.org/isomorfeus/isomorfeus-speednode)
 
 ### Installation
 
