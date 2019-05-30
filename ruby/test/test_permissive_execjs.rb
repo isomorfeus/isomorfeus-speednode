@@ -293,13 +293,13 @@ class TestPermissiveExecJS < Test
     assert ExecJS.permissive_eval("typeof self == 'undefined'")
   end
 
-  def test_node_global_is_undefined
-    assert ExecJS.permissive_eval("typeof global == 'undefined'")
+  def test_node_global_is_defined
+    assert ExecJS.permissive_eval("typeof global == 'object'")
   end
 
-  def test_node_process_is_undefined
-    assert ExecJS.permissive_eval("typeof process == 'undefined'")
-    refute ExecJS.permissive_eval("'process' in this")
+  def test_node_process_object_is_defined
+    assert ExecJS.permissive_eval("typeof process == 'object'")
+    assert ExecJS.permissive_eval("'process' in this")
   end
 
   def test_some_commonjs_vars_are_defined
@@ -417,8 +417,6 @@ class TestPermissiveExecJS < Test
   end
 
   def test_babel
-    skip if ExecJS.runtime.is_a?(ExecJS::RubyRhinoRuntime)
-
     assert source = File.read(File.expand_path("../fixtures/babel.js", __FILE__))
     source = <<-JS
       var self = this;
