@@ -78,6 +78,13 @@ module Isomorfeus
           @socket = UNIXSocket.new(@socket_path)
           @started = true
 
+          at_exit do
+            unless @socket.closed?
+              VMCommand.new(@socket, "exit", [0]).execute
+              @socket.close
+            end
+          end
+
           ObjectSpace.define_finalizer(self, self.class.finalize(@socket))
         end
 
