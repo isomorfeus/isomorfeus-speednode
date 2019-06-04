@@ -97,7 +97,11 @@ module Isomorfeus
 
           ObjectSpace.define_finalizer(self, self.class.finalize(@runtime, @uuid))
 
-          source = encode(source)
+          begin
+            source = encode(source)
+          rescue
+            source = source.force_encoding('UTF-8')
+          end
 
           @permissive ? raw_execp(source) : raw_exec(source)
         end
