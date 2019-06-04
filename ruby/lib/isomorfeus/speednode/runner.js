@@ -1,7 +1,9 @@
+'use strict';
+
 const vm = require('vm');
 const net = require('net');
-var contexts = {};
-var process_exit = false;
+let contexts = {};
+let process_exit = false;
 
 /*** circular-json, originally taken from https://raw.githubusercontent.com/WebReflection/circular-json/
  Copyright (C) 2013-2017 by Andrea Giammarchi - @WebReflection
@@ -37,12 +39,12 @@ CircularJSON.safeSpecialChar =  '\\x' + ('0' + CircularJSON.specialChar.charCode
 CircularJSON.escapedSafeSpecialChar = '\\' + CircularJSON.safeSpecialChar;
 CircularJSON.specialCharRG = new RegExp(CircularJSON.safeSpecialChar, 'g');
 CircularJSON.indexOf = [].indexOf || function(v){
-    for(var i=this.length;i--&&this[i]!==v;);
+    for(let i=this.length;i--&&this[i]!==v;);
     return i;
   };
 
 CircularJSON.generateReplacer = function (value, replacer, resolve) {
-    var
+    let
         doNotIgnore = false,
         inspect = !!replacer,
         path = [],
@@ -142,7 +144,7 @@ function massageStackTrace(stack) {
 }
 
 function createCompatibleContext() {
-    var c = vm.createContext();
+    let c = vm.createContext();
     vm.runInContext('delete this.console', c, "(execjs)");
     return c;
 }
@@ -154,11 +156,12 @@ function createPermissiveContext() {
 function getCompatibleContext(uuid) {
     return contexts[uuid] || (contexts[uuid] = createCompatibleContext());
 }
+
 function getPermissiveContext(uuid) {
     return contexts[uuid] || (contexts[uuid] = createPermissiveContext());
 }
 
-var commands = {
+let commands = {
     deleteContext: function(uuid) {
         delete contexts[uuid];
         return [1];
@@ -168,10 +171,10 @@ var commands = {
         return ['ok'];
     },
     execp: function execJS(input) {
-        var context = getPermissiveContext(input.context);
+        let context = getPermissiveContext(input.context);
         try {
-            var program = function(){ return vm.runInContext(input.source, context, "(execjs)"); };
-            var result = program();
+            let program = function(){ return vm.runInContext(input.source, context, "(execjs)"); };
+            let result = program();
             if (typeof result == 'undefined' && result !== null) { return ['ok']; }
             else {
                 try { return ['ok', result]; }
@@ -180,10 +183,10 @@ var commands = {
         } catch (err) { return ['err', '' + err, massageStackTrace(err.stack)]; }
     },
     exec: function execJS(input) {
-        var context = getCompatibleContext(input.context);
+        let context = getCompatibleContext(input.context);
         try {
-            var program = function(){ return vm.runInContext(input.source, context, "(execjs)"); };
-            var result = program();
+            let program = function(){ return vm.runInContext(input.source, context, "(execjs)"); };
+            let result = program();
             if (typeof result == 'undefined' && result !== null) { return ['ok']; }
             else {
                 try { return ['ok', result]; }
@@ -193,19 +196,18 @@ var commands = {
     }
 };
 
-var server = net.createServer(function(s) {
-    var received_data = '';
+let server = net.createServer(function(s) {
+    let received_data = Buffer.alloc(0);
 
     s.on('data', function (data) {
-        received_data += data;
+        received_data = Buffer.concat([received_data, data]);
+        if (received_data[received_data.length - 1] !== 4) { return; }
+        let request = received_data.slice(0, received_data.length - 1).toString('utf8');
+        received_data = Buffer.alloc(0);
 
-        if (!received_data.endsWith("\x04")) { return; }
-        var request = received_data.substring(0, received_data.length - 1);
-        received_data = '';
-
-        var input = JSON.parse(request);
-        var result = commands[input.cmd].apply(null, input.args);
-        var outputJSON = '';
+        let input = JSON.parse(request);
+        let result = commands[input.cmd].apply(null, input.args);
+        let outputJSON = '';
 
         try { outputJSON = JSON.stringify(result); }
         catch(err) {
@@ -218,6 +220,6 @@ var server = net.createServer(function(s) {
   });
 });
 
-var socket_path = process.env.SOCKET_PATH;
+let socket_path = process.env.SOCKET_PATH;
 if (!socket_path) { throw 'No SOCKET_PATH given!'; };
 server.listen(socket_path);
