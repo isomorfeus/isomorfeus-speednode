@@ -33,13 +33,15 @@ module Isomorfeus
         end
 
         def self.finalize(socket, socket_dir, socket_path, pid)
-          proc {
-            VMCommand.new(socket, "exit", [0]).execute
-            socket.close
-            File.unlink(socket_path)
-            Dir.rmdir(socket_dir)
-            Process.kill('KILL', pid)
-          }
+          proc { exit_node(socket, socket_dir, socket_path, pid) }
+        end
+
+        def self.exit_node(socket, socket_dir, socket_path, pid)
+          VMCommand.new(socket, "exit", [0]).execute
+          socket.close
+          File.unlink(socket_path)
+          Dir.rmdir(socket_dir)
+          Process.kill('KILL', pid)
         end
 
         def exec(context, source)
@@ -82,13 +84,7 @@ module Isomorfeus
           @started = true
 
           at_exit do
-            unless @socket.closed?
-              VMCommand.new(@socket, "exit", [0]).execute
-              @socket.close
-              File.unlink(@socket_path)
-              Dir.rmdir(@socket_dir)
-              Process.kill('KILL', @pid)
-            end
+            self.class.exit_node(@socket, @socket_dir, @socket_path, @pid) unless @socket.closed?
           end
 
           ObjectSpace.define_finalizer(self, self.class.finalize(@socket, @socket_dir, @socket_path, @pid))
