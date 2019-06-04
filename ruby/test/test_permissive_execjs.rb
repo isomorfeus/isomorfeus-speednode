@@ -10,10 +10,12 @@ rescue ExecJS::RuntimeUnavailable => e
   exit 2
 end
 
-if defined? Minitest::Test
-  Test = Minitest::Test
-elsif defined? MiniTest::Unit::TestCase
-  Test = MiniTest::Unit::TestCase
+unless defined? Test
+  if defined? Minitest::Test
+    Test = Minitest::Test
+  elsif defined? MiniTest::Unit::TestCase
+    Test = MiniTest::Unit::TestCase
+  end
 end
 
 class TestPermissiveExecJS < Test
@@ -415,9 +417,9 @@ class TestPermissiveExecJS < Test
       ExecJS.permissive_compile("throw 'hello'")
     end
   end
-  
+
   # babel.js doesnt work as expected if global is defined
-  # 
+  #
   # def test_babel
   #   assert source = File.read(File.expand_path("../fixtures/babel.js", __FILE__))
   #   source = <<-JS
