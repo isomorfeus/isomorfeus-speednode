@@ -32,10 +32,13 @@ module Isomorfeus
           @started
         end
 
-        def self.finalize(socket)
+        def self.finalize(socket, socket_dir, socket_path, pid)
           proc {
             VMCommand.new(socket, "exit", [0]).execute
             socket.close
+            File.unlink(socket_path)
+            Dir.rmdir(socket_dir)
+            Process.kill('KILL', pid)
           }
         end
 
@@ -61,8 +64,8 @@ module Isomorfeus
 
         def start_without_synchronization
           return if @started
-          dir = Dir.mktmpdir("isomorfeus-speednode-")
-          @socket_path = File.join(dir, "socket")
+          @socket_dir = Dir.mktmpdir("isomorfeus-speednode-")
+          @socket_path = File.join(@socket_dir, "socket")
           @pid = Process.spawn({"SOCKET_PATH" => @socket_path}, @options[:binary], @options[:runner_path])
 
           retries = 20
@@ -82,10 +85,13 @@ module Isomorfeus
             unless @socket.closed?
               VMCommand.new(@socket, "exit", [0]).execute
               @socket.close
+              File.unlink(@socket_path)
+              Dir.rmdir(@socket_dir)
+              Process.kill('KILL', @pid)
             end
           end
 
-          ObjectSpace.define_finalizer(self, self.class.finalize(@socket))
+          ObjectSpace.define_finalizer(self, self.class.finalize(@socket, @socket_dir, @socket_path, @pid))
         end
 
         def command(cmd, *arguments)
