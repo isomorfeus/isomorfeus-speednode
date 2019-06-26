@@ -150,7 +150,7 @@ function createCompatibleContext() {
 }
 
 function createPermissiveContext() {
-    return vm.createContext({ global: {}, process: {release: {name: "node"}}, require, setTimeout });
+    return vm.createContext({ global: {}, process: {release: {name: "node"}}, Buffer, require, setTimeout });
 }
 
 function getCompatibleContext(uuid) {
