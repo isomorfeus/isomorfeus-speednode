@@ -84,7 +84,11 @@ module Isomorfeus
           @started = true
 
           at_exit do
-            self.class.exit_node(@socket, @socket_dir, @socket_path, @pid) unless @socket.closed?
+            begin
+              self.class.exit_node(@socket, @socket_dir, @socket_path, @pid) unless @socket.closed?
+            rescue
+              # do nothing
+            end
           end
 
           ObjectSpace.define_finalizer(self, self.class.finalize(@socket, @socket_dir, @socket_path, @pid))
