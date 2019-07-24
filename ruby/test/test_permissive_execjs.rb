@@ -322,14 +322,14 @@ class TestPermissiveExecJS < Test
   def test_some_timers_are_defined
     refute ExecJS.permissive_eval("typeof setTimeout == 'undefined'")
     assert ExecJS.permissive_eval("typeof setInterval == 'undefined'")
-    assert ExecJS.permissive_eval("typeof clearTimeout == 'undefined'")
+    refute ExecJS.permissive_eval("typeof clearTimeout == 'undefined'")
     assert ExecJS.permissive_eval("typeof clearInterval == 'undefined'")
     assert ExecJS.permissive_eval("typeof setImmediate == 'undefined'")
     assert ExecJS.permissive_eval("typeof clearImmediate == 'undefined'")
 
     assert ExecJS.permissive_eval("'setTimeout' in this")
     refute ExecJS.permissive_eval("'setInterval' in this")
-    refute ExecJS.permissive_eval("'clearTimeout' in this")
+    assert ExecJS.permissive_eval("'clearTimeout' in this")
     refute ExecJS.permissive_eval("'clearInterval' in this")
     refute ExecJS.permissive_eval("'setImmediate' in this")
     refute ExecJS.permissive_eval("'clearImmediate' in this")
