@@ -124,7 +124,7 @@ module Isomorfeus
         end
 
         def call(identifier, *args)
-          eval "#{identifier}.apply(this, #{::Oj.dump(args)})"
+          eval "#{identifier}.apply(this, #{::Oj.dump(args, mode: :strict)})"
         end
 
         def eval(source, options = {})
