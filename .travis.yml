@@ -1,8 +1,8 @@
 dist: bionic
 lanugage: ruby
-rvm: 2.6.3
+rvm: 2.6.5
 gemfile: ruby/Gemfile
 script: cd ruby; bundle exec rake
-before_install: nvm install 10.16.3
+before_install: nvm install 12.13.0
 notifications:
   slack: isomorfeus:fkfbTBlQTpTgXaF7e0YOjWCG
