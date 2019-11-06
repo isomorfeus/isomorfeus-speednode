@@ -128,9 +128,7 @@ module Isomorfeus
         end
 
         def eval(source, options = {})
-          if /\S/ =~ source
-            raw_exec("(#{source})")
-          end
+          raw_exec("(#{source})") if /\S/ =~ source
         end
 
         def exec(source, options = {})
@@ -142,9 +140,7 @@ module Isomorfeus
         end
 
         def permissive_eval(source, options = {})
-          if /\S/ =~ source
-            raw_execp("(#{source})")
-          end
+          raw_execp("(#{source})") if /\S/ =~ source
         end
 
         def permissive_exec(source, options = {})
