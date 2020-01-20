@@ -1,5 +1,6 @@
 require "bundler/gem_tasks"
 require "rake/testtask"
+require_relative 'lib/isomorfeus/speednode/version'
 
 task :bench do
   sh 'ruby -Ilib -r./test/shim test/bench.rb'
@@ -16,3 +17,24 @@ Rake::TestTask.new(:test) do |t|
 end
 
 task :default => :test
+
+task :push_ruby_packages do
+  Rake::Task['push_ruby_packages_to_rubygems'].invoke
+  Rake::Task['push_ruby_packages_to_isomorfeus'].invoke
+  Rake::Task['push_ruby_packages_to_github'].invoke
+end
+
+task :push_ruby_packages_to_rubygems do
+  system("gem push isomorfeus-speednode-#{Isomorfeus::Speednode::VERSION}.gem")
+end
+
+task :push_ruby_packages_to_github do
+  system("gem push --key github --host https://rubygems.pkg.github.com/isomorfeus isomorfeus-react-#{Isomorfeus::Speednode::VERSION}.gem")
+end
+
+task :push_ruby_packages_to_isomorfeus do
+  Bundler.with_original_env do
+    system("scp isomorfeus-speednode-#{Isomorfeus::Speednode::VERSION}.gem iso:~/gems/")
+    system("ssh iso \"bash -l -c 'gem inabox gems/isomorfeus-speednode-#{Isomorfeus::Speednode::VERSION}.gem --host http://localhost:5555/'\"")
+  end
+end
