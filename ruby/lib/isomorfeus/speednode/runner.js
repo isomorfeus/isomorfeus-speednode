@@ -197,27 +197,26 @@ let commands = {
 };
 
 let server = net.createServer(function(s) {
-    let received_data = Buffer.alloc(0);
+    let received_data = [];
 
     s.on('data', function (data) {
-        received_data = Buffer.concat([received_data, data]);
-        if (received_data[received_data.length - 1] !== 4) { return; }
-        let request = received_data.slice(0, received_data.length - 1).toString('utf8');
-        received_data = Buffer.alloc(0);
-
+        received_data.push(data);
+        if (data[data.length - 1] !== 4) { return; }
+        let request = received_data.join('').toString('utf8');
+        request = request.substr(0, request.length - 1);
+        received_data = [];
         let input = JSON.parse(request);
         let result = commands[input.cmd].apply(null, input.args);
         let outputJSON = '';
 
         try { outputJSON = JSON.stringify(result); }
         catch(err) {
-            if (err.message.includes('circular')) {
-            outputJSON = CircularJSON.stringify(result);
-        } else { outputJSON = JSON.stringify(['err', '' + err, err.stack]); }
-    }
-    s.write(outputJSON + '\x04');
-    if (process_exit !== false) { process.exit(process_exit); }
-  });
+            if (err.message.includes('circular')) { outputJSON = CircularJSON.stringify(result); }
+            else { outputJSON = JSON.stringify(['err', '' + err, err.stack]); }
+        }
+        s.write(outputJSON + '\x04');
+        if (process_exit !== false) { process.exit(process_exit); }
+    });
 });
 
 let socket_path = process.env.SOCKET_PATH;
