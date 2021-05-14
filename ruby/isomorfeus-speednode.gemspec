@@ -13,9 +13,10 @@ Gem::Specification.new do |s|
   s.files          = `git ls-files -- {lib,LICENSE,README.md}`.split("\n")
   s.require_paths  = ['lib']
 
-  s.add_dependency 'execjs', '~> 2.7.0'
-  s.add_dependency 'oj', '>= 3.6.0'
+  s.add_dependency 'execjs', '~> 2.8.0'
+  s.add_dependency 'oj', '>= 3.11.0'
+  s.add_dependency 'win32-pipe', '>= 0.4.0'
   s.add_development_dependency 'bundler'
-  s.add_development_dependency 'minitest', '~> 5.0'
+  s.add_development_dependency 'minitest', '~> 5.14.4'
   s.add_development_dependency 'rake'
 end

@@ -1,3 +1,42 @@
+require 'securerandom'
+if Gem.win_platform?
+  require 'win32/pipe'
+
+  module Win32
+    class Pipe
+      def write(data)
+        bytes = FFI::MemoryPointer.new(:ulong)
+
+        raise Error, "no pipe created" unless @pipe
+
+        if @asynchronous
+          bool = WriteFile(@pipe, data, data.bytesize, bytes, @overlapped)
+          bytes_written = bytes.read_ulong
+
+          if bool && bytes_written > 0
+            @pending_io = false
+            return true
+          end
+
+          error = GetLastError()
+          if !bool && error == ERROR_IO_PENDING
+            @pending_io = true
+            return true
+          end
+
+          return false
+        else
+          unless WriteFile(@pipe, data, data.bytesize, bytes, nil)
+            raise SystemCallError.new("WriteFile", FFI.errno)
+          end
+
+          return true
+        end
+      end
+    end
+  end
+end
+
 module Isomorfeus
   module Speednode
     class Runtime < ExecJS::Runtime
@@ -11,10 +50,27 @@ module Isomorfeus
         def execute
           result = ''
           message = ::Oj.dump({ 'cmd' => @cmd, 'args' => @arguments }, mode: :strict)
-          @socket.sendmsg(message + "\x04")
-          begin
-            result << @socket.recvmsg()[0]
-          end until result.end_with?("\x04")
+          message = message + "\x04"
+          bytes_to_send = message.bytesize
+          sent_bytes = 0
+
+          if ExecJS.windows?
+            @socket.write(message)
+            begin
+              result << @socket.read
+            end until result.end_with?("\x04")
+          else
+            sent_bytes = @socket.sendmsg(message)
+            if sent_bytes < bytes_to_send
+              while sent_bytes < bytes_to_send
+                sent_bytes += @socket.sendmsg(message.byteslice((sent_bytes)..-1))
+              end
+            end
+            
+            begin
+              result << @socket.recvmsg()[0]
+            end until result.end_with?("\x04")
+          end
           ::Oj.load(result.chop!, create_additions: false)
         end
       end
@@ -66,21 +122,40 @@ module Isomorfeus
 
         def start_without_synchronization
           return if @started
-          @socket_dir = Dir.mktmpdir("isomorfeus-speednode-")
-          @socket_path = File.join(@socket_dir, "socket")
+          if ExecJS.windows?
+            @socket_dir = nil
+            @socket_path = SecureRandom.uuid
+          else
+            @socket_dir = Dir.mktmpdir("isomorfeus-speednode-")
+            @socket_path = File.join(@socket_dir, "socket")
+          end
           @pid = Process.spawn({"SOCKET_PATH" => @socket_path}, @options[:binary], @options[:runner_path])
 
           retries = 20
-          while !File.exist?(@socket_path)
-            sleep 0.05
-            retries -= 1
 
-            if retries == 0
-              raise "Unable to start nodejs process in time"
+          if ExecJS.windows?
+            timeout_or_connected = false
+            begin
+              retries -= 1 
+              begin
+                @socket = Win32::Pipe::Client.new(@socket_path, Win32::Pipe::ACCESS_DUPLEX)
+              rescue
+                sleep 0.1
+                raise "Unable to start nodejs process in time" if retries == 0
+                next
+              end
+              timeout_or_connected = true
+            end until timeout_or_connected
+          else
+            while !File.exist?(@socket_path)
+              sleep 0.1
+              retries -= 1
+              raise "Unable to start nodejs process in time" if retries == 0
             end
+
+            @socket = UNIXSocket.new(@socket_path)
           end
 
-          @socket = UNIXSocket.new(@socket_path)
           @started = true
 
           at_exit do

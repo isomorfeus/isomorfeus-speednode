@@ -106,37 +106,21 @@ class TestExecJS < Test
     '"\\\\"' => "\\"
   }.each_with_index do |(input, output), index|
     define_method("test_exec_string_#{index}") do
-      if output == nil
-        assert_nil output, ExecJS.exec("return #{input}")
-      else
-        assert_equal output, ExecJS.exec("return #{input}")
-      end
+      assert_output output, ExecJS.exec("return #{input}")
     end
 
     define_method("test_eval_string_#{index}") do
-      if output == nil
-        assert_nil output, ExecJS.eval(input)
-      else
-        assert_equal output, ExecJS.eval(input)
-      end
+      assert_output output, ExecJS.eval(input)
     end
 
     define_method("test_compile_return_string_#{index}") do
       context = ExecJS.compile("var a = #{input};")
-      if output == nil
-        assert_nil output, context.eval("a")
-      else
-        assert_equal output, context.eval("a")
-      end
+      assert_output output, context.eval("a")
     end
 
     define_method("test_compile_call_string_#{index}") do
       context = ExecJS.compile("function a() { return #{input}; }")
-      if output == nil
-        assert_nil output, context.call("a")
-      else
-        assert_equal output, context.call("a")
-      end
+      assert_output output, context.call("a")
     end
   end
 
@@ -163,41 +147,25 @@ class TestExecJS < Test
     json_value = JSON.generate(value, quirks_mode: true)
 
     define_method("test_json_value_#{index}") do
-      if value == nil
-        assert_nil value, JSON.parse(json_value, quirks_mode: true)
-      else
-        assert_equal value, JSON.parse(json_value, quirks_mode: true)
-      end
+      assert_output value, JSON.parse(json_value, quirks_mode: true)
     end
 
     define_method("test_exec_value_#{index}") do
-      if value == nil
-        assert_nil value, ExecJS.exec("return #{json_value}")
-      else
-        assert_equal value, ExecJS.exec("return #{json_value}")
-      end
+      assert_output value, ExecJS.exec("return #{json_value}")
     end
 
     define_method("test_eval_value_#{index}") do
-      if value == nil
-        assert_nil value, ExecJS.eval("#{json_value}")
-      else
-        assert_equal value, ExecJS.eval("#{json_value}")
-      end
+      assert_output value, ExecJS.eval("#{json_value}")
     end
 
     define_method("test_strinigfy_value_#{index}") do
       context = ExecJS.compile("function json(obj) { return JSON.stringify(obj); }")
-      assert_equal json_value, context.call("json", value)
+      assert_output json_value, context.call("json", value)
     end
 
     define_method("test_call_value_#{index}") do
       context = ExecJS.compile("function id(obj) { return obj; }")
-      if value == nil
-        assert_nil value, context.call("id", value)
-      else
-        assert_equal value, context.call("id", value)
-      end
+      assert_output value, context.call("id", value)
     end
   end
 
@@ -340,6 +308,11 @@ class TestExecJS < Test
     assert ExecJS.exec("function foo() {\n#{body}\n};\nreturn true")
   end
 
+  def test_large_return_value
+    string = ExecJS.eval('(new Array(100001)).join("abcdef")')
+    assert_equal 600_000, string.size
+  end
+
   def test_exec_syntax_error
     begin
       ExecJS.exec(")")
@@ -455,4 +428,14 @@ class TestExecJS < Test
     assert_equal "function foo(bar){return bar}",
       context.call("uglify", "function foo(bar) {\n  return bar;\n}")
   end
+
+  private
+
+    def assert_output(expected, actual)
+      if expected.nil?
+        assert_nil actual
+      else
+        assert_equal expected, actual
+      end
+    end
 end

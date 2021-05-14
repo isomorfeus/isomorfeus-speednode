@@ -13,14 +13,13 @@ end
 Rake::TestTask.new(:test) do |t|
   t.libs << "test"
   t.libs << "lib"
-  t.test_files = FileList['test/shim.rb', 'test/**/*_test.rb', 'test/test_execjs.rb', 'test/test_permissive_execjs.rb']
+  t.test_files = FileList['test/shim.rb', 'test/test_isomorfeus_speednode.rb', 'test/test_execjs.rb', 'test/test_permissive_execjs.rb']
 end
 
 task :default => :test
 
 task :push_ruby_packages do
   Rake::Task['push_ruby_packages_to_rubygems'].invoke
-  Rake::Task['push_ruby_packages_to_isomorfeus'].invoke
   Rake::Task['push_ruby_packages_to_github'].invoke
 end
 
@@ -30,11 +29,4 @@ end
 
 task :push_ruby_packages_to_github do
   system("gem push --key github --host https://rubygems.pkg.github.com/isomorfeus isomorfeus-speednode-#{Isomorfeus::Speednode::VERSION}.gem")
-end
-
-task :push_ruby_packages_to_isomorfeus do
-  Bundler.with_original_env do
-    system("scp isomorfeus-speednode-#{Isomorfeus::Speednode::VERSION}.gem iso:~/gems/")
-    system("ssh iso \"bash -l -c 'gem inabox gems/isomorfeus-speednode-#{Isomorfeus::Speednode::VERSION}.gem --host http://localhost:5555/'\"")
-  end
 end

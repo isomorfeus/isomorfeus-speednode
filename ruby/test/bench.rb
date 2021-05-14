@@ -1,13 +1,15 @@
 require 'bundler/setup'
 Bundler.require
-require 'mini_racer'
-require 'execjs/fastnode'
+unless Gem.win_platform?
+  require 'mini_racer'
+  require 'execjs/fastnode'
+end
 require 'benchmark'
 
 TIMES = 1000
 CALL_TIMES = 1000
 SOURCE = File.read(File.expand_path("./fixtures/coffee-script.js", File.dirname(__FILE__))).freeze
-EXCLUDED_RUNTIMES = [ExecJS::Runtimes::Node, ExecJS::Runtimes::JavaScriptCore, ExecJS::Runtimes::V8]
+EXCLUDED_RUNTIMES = [ExecJS::Runtimes::JavaScriptCore, ExecJS::Runtimes::V8, ExecJS::Runtimes::JScript]
 
 puts "Standard ExecJS CoffeeScript call benchmark:"
 Benchmark.bmbm do |x|

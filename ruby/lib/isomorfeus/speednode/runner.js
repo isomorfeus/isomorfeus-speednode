@@ -2,6 +2,7 @@
 
 const vm = require('vm');
 const net = require('net');
+const os = require('os');
 let contexts = {};
 let process_exit = false;
 
@@ -172,27 +173,21 @@ let commands = {
     },
     execp: function execJS(input) {
         let context = getPermissiveContext(input.context);
-        try {
-            let program = function(){ return vm.runInContext(input.source, context, "(execjs)"); };
-            let result = program();
-            if (typeof result == 'undefined' && result !== null) { return ['ok']; }
-            else {
-                try { return ['ok', result]; }
-                catch (err) { return ['err', '' + err, err.stack]; }
-            }
-        } catch (err) { return ['err', '' + err, massageStackTrace(err.stack)]; }
+        let result = vm.runInContext(input.source, context, "(execjs)");
+        if (typeof result === 'undefined' && result !== null) { return ['ok']; }
+        else {
+            try { return ['ok', result]; }
+            catch (err) { return ['err', ['', err].join(''), err.stack]; }
+        }
     },
     exec: function execJS(input) {
         let context = getCompatibleContext(input.context);
-        try {
-            let program = function(){ return vm.runInContext(input.source, context, "(execjs)"); };
-            let result = program();
-            if (typeof result == 'undefined' && result !== null) { return ['ok']; }
-            else {
-                try { return ['ok', result]; }
-                catch (err) { return ['err', '' + err, err.stack]; }
-            }
-        } catch (err) { return ['err', '' + err, massageStackTrace(err.stack)]; }
+        let result = vm.runInContext(input.source, context, "(execjs)");
+        if (typeof result === 'undefined' && result !== null) { return ['ok']; }
+        else {
+            try { return ['ok', result]; }
+            catch (err) { return ['err', ['', err].join(''), err.stack]; }
+        }
     }
 };
 
@@ -202,23 +197,43 @@ let server = net.createServer(function(s) {
     s.on('data', function (data) {
         received_data.push(data);
         if (data[data.length - 1] !== 4) { return; }
+        
         let request = received_data.join('').toString('utf8');
         request = request.substr(0, request.length - 1);
         received_data = [];
-        let input = JSON.parse(request);
-        let result = commands[input.cmd].apply(null, input.args);
+        
+        let input, result;
         let outputJSON = '';
+
+        try { input = JSON.parse(request); }
+        catch(err) { 
+          outputJSON = JSON.stringify(['err', ['', err].join(''), err.stack]);
+          s.write([outputJSON, "\x04"].join(''));
+          return;
+        }
+
+        try { result = commands[input.cmd].apply(null, input.args); } 
+        catch (err) { 
+          outputJSON = JSON.stringify(['err', ['', err].join(''), massageStackTrace(err.stack)]);
+          s.write([outputJSON, "\x04"].join(''));
+          return;
+        }
 
         try { outputJSON = JSON.stringify(result); }
         catch(err) {
             if (err.message.includes('circular')) { outputJSON = CircularJSON.stringify(result); }
-            else { outputJSON = JSON.stringify(['err', '' + err, err.stack]); }
+            else { outputJSON = JSON.stringify([['', err].join(''), err.stack]); }
+            s.write([outputJSON, "\x04"].join(''));
+            return;
         }
-        s.write(outputJSON + '\x04');
+
+        s.write([outputJSON, "\x04"].join(''));
         if (process_exit !== false) { process.exit(process_exit); }
     });
 });
 
 let socket_path = process.env.SOCKET_PATH;
 if (!socket_path) { throw 'No SOCKET_PATH given!'; };
-server.listen(socket_path);
+if (os.platform().indexOf('win') > -1) { server.listen('\\\\.\\pipe\\' + socket_path); }
+else { server.listen(socket_path); }
+
